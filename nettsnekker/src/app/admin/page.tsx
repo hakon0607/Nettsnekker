@@ -17,6 +17,7 @@ export default function Oversikt() {
   const [sendt, setSendt] = useState<Sendt[]>([]);
   const [oppsett, setOppsett] = useState<Oppsett | null>(null);
   const [laster, setLaster] = useState(true);
+  const [vippsMangler, setVippsMangler] = useState(false);
 
   useEffect(() => {
     const hent = async () => {
@@ -30,6 +31,7 @@ export default function Oversikt() {
     };
     hent();
     api<Oppsett>('/api/admin/oppsett').then(setOppsett).catch(() => {});
+    sb.from('settings').select('value').eq('key', 'bedrift').maybeSingle().then(({ data }) => setVippsMangler(!(data?.value as { vippsNummer?: string } | null)?.vippsNummer));
     const k = sb.channel('oversikt').on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, hent).subscribe();
     return () => {
       sb.removeChannel(k);
@@ -45,6 +47,8 @@ export default function Oversikt() {
   const handlinger: { o: Ordre; tekst: string }[] = [];
   const nå = Date.now();
   for (const o of ordre) {
+    if (o.status === 'venter_gebyr') handlinger.push({ o, tekst: `Se etter ${kr(o.gebyr)} på Vipps med meldingen ${o.ordrenr}` });
+    if (o.status === 'utkast_sendt') handlinger.push({ o, tekst: `Venter på ${kr(o.rest)} på Vipps (${o.ordrenr})` });
     if (o.status === 'ny') handlinger.push({ o, tekst: o.claude_prompt ? 'Prompten er klar – start å snekre' : 'Ny bestilling – lag prompten' });
     if (o.status === 'utkast_sendt' && o.updated_at && nå - new Date(o.updated_at).getTime() > 5 * 864e5) handlinger.push({ o, tekst: 'Ingen svar på utkastet på 5 dager – send påminnelse' });
     if (o.status === 'endringer') handlinger.push({ o, tekst: 'Kunden vil ha endringer' });
@@ -58,8 +62,6 @@ export default function Oversikt() {
   const mangler = oppsett
     ? [
         !oppsett.supabase && 'SUPABASE_SERVICE_ROLE_KEY',
-        !oppsett.stripe && 'STRIPE_SECRET_KEY',
-        oppsett.stripe && !oppsett.stripeWebhook && 'STRIPE_WEBHOOK_SECRET',
         !oppsett.resend && 'RESEND_API_KEY',
         !oppsett.openai && 'OPENAI_API_KEY (valgfri)',
       ].filter(Boolean)
@@ -79,10 +81,13 @@ export default function Oversikt() {
       {mangler.length > 0 && (
         <div className="rounded-2xl bg-harpiks-100 px-5 py-4 text-sm text-ink-800">
           <strong>Oppsettet er ikke ferdig.</strong> Legg inn i Vercel → Settings → Environment Variables: {mangler.join(', ')}. Se OPPSETT.md.
-          {oppsett?.stripeTest && <span className="ml-1">Stripe er i testmodus.</span>}
         </div>
       )}
-      {oppsett?.stripeTest && mangler.length === 0 && <div className="rounded-2xl bg-white/60 px-5 py-3 text-sm text-ink-700">Stripe er i <strong>testmodus</strong>. Bytt til live-nøkler når du er klar for ekte betalinger.</div>}
+      {vippsMangler && (
+        <Link href="/admin/innstillinger" className="block rounded-2xl bg-[#FFF1EC] px-5 py-4 text-sm text-ink-800">
+          <strong>Vipps-nummeret mangler.</strong> Kundene vet ikke hvor de skal betale. Legg det inn under Innstillinger.
+        </Link>
+      )}
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {tall.map((t, i) => (

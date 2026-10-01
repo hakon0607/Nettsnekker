@@ -89,7 +89,7 @@ export function Hero({ t, gebyr }: { t: Tekster; gebyr: number }) {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.9 }}
           >
-            Du betaler {gebyr} kr for å bestille. Resten først når du har sett og godkjent utkastet.
+            Du vippser {gebyr} kr når du bestiller. Resten først når du har sett og godkjent utkastet.
           </motion.p>
         </div>
 

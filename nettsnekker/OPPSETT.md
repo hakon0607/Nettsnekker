@@ -34,18 +34,16 @@ Regn med ca. én time første gang. Gjør stegene i rekkefølge.
 
 > Uten eget domene kan du bare teste: Resend sender da bare til din egen e-post.
 
-## 4. Stripe – betaling
+## 4. Vipps – betaling
 
-> Stripe-kontoen må eies av en som er myndig (18 år). Er du yngre, kan en forelder eie kontoen.
+Kundene betaler med vanlig Vipps til nummeret ditt, og skriver bestillingsnummeret (f.eks. `NS-1001`) i meldingen. Du kobler betalingen til bestillingen selv i admin.
 
-1. Lag konto på [stripe.com](https://stripe.com). Start i **testmodus** (bryteren oppe til høyre).
-2. **Developers → API keys** → `Secret key` → `STRIPE_SECRET_KEY`.
-3. **Developers → Webhooks → Add endpoint**:
-   - URL: `https://DIN-ADRESSE/api/stripe/webhook`
-   - Hendelser: `checkout.session.completed` og `checkout.session.async_payment_succeeded`
-   - Kopier **Signing secret** → `STRIPE_WEBHOOK_SECRET`
-4. Test med kortnummer `4242 4242 4242 4242`, en dato frem i tid og hvilken som helst CVC.
-5. Når alt virker: aktiver kontoen, bytt til live-nøkler og lag en ny webhook i live-modus.
+1. Etter at siden er oppe: gå til `/admin/innstillinger` og fyll inn **Vipps-nummer** og **Navn i Vipps**.
+2. Kunden får Vipps-informasjonen på skjermen når bestillingen er sendt, og i e-posten.
+3. Når du ser betalingen i Vipps: åpne bestillingen og trykk **Gebyret er mottatt på Vipps**. Kunden får automatisk e-post om at arbeidet starter.
+4. Når kunden har vippset resten etter utkastet: trykk **Resten er mottatt på Vipps**. Kunden får kvittering.
+
+> Tips: Får du mange betalinger, kan du senere bytte til et bedrifts-Vipps-nummer (Vipps Bedrift / «Vippsnummer»). Da endrer du bare nummeret i Innstillinger.
 
 ## 5. OpenAI – analyse av bestillinger (valgfritt)
 
@@ -64,8 +62,6 @@ Regn med ca. én time første gang. Gjør stegene i rekkefølge.
    | `SUPABASE_SERVICE_ROLE_KEY` | Supabase |
    | `NEXT_PUBLIC_SITE_URL` | Adressen til siden, uten / til slutt |
    | `ADMIN_EMAILS` | Din e-post (blir admin automatisk første gang du logger inn) |
-   | `STRIPE_SECRET_KEY` | Stripe |
-   | `STRIPE_WEBHOOK_SECRET` | Stripe |
    | `RESEND_API_KEY` | Resend |
    | `EPOST_AVSENDER` | f.eks. `Nettsnekker <post@nettsnekker.no>` |
    | `OPENAI_API_KEY` | OpenAI (valgfri) |
@@ -91,12 +87,12 @@ Alle nettsidene du lager deler én database, så du slipper å lage et nytt Supa
 
 ## Slik jobber du med en bestilling
 
-1. **Kunden bestiller** og betaler gebyret. Du får e-post, og bestillingen dukker opp under **Bestillinger** med status «Ny».
+1. **Kunden bestiller** og får Vipps-informasjon på skjermen og på e-post. Du får varsel, og bestillingen står som «Venter på Vipps». Når gebyret har kommet, trykker du **Gebyret er mottatt på Vipps**. Status blir «Ny».
 2. **Lag prompten:** åpne bestillingen → **Prompt til Claude** → **Analyser med AI og lag prompt**.
 3. **Bygg:** kopier prompten og lim den inn i Claude Code. Claude bygger siden, pusher til GitHub og deployer til Vercel, og gir deg en `.vercel.app`-lenke.
-4. **Send utkastet:** under **Fremdrift**, lim inn lenken → **Lag betalingslenke** → **Send utkastet til kunden**. Status blir «Utkast sendt».
+4. **Send utkastet:** under **Fremdrift**, lim inn lenken → **Send utkastet til kunden**. E-posten forteller kunden at de godkjenner ved å vippse resten med bestillingsnummeret. Status blir «Utkast sendt».
 5. **Endringer?** Trykk **Kunden vil ha endringer**, fiks det, og send **Nytt utkast**.
-6. **Kunden betaler** via lenken i e-posten. Stripe sier fra automatisk, status blir «Betalt», og kunden får kvittering.
+6. **Kunden vippser resten.** Trykk **Resten er mottatt på Vipps**. Status blir «Betalt», og kunden får kvittering.
 7. **Koble domenet** i Vercel (Domains → Buy / Add), legg inn live-adressen og send **«Nettsiden er live»**.
 8. **Marker som levert.** Oversikten minner deg på når hosting må fornyes.
 
@@ -109,7 +105,7 @@ Alle e-poster som sendes, både automatiske og manuelle, ligger under **E-post �
 - **Vercel:** Gratisplanen (Hobby) er bare for ikke-kommersiell bruk. Når du tar betalt for nettsider, trenger du **Pro** (ca. 20 $ per måned), som dekker alle kundesidene.
 - **Supabase:** Gratis til du har mange kunder. Pro koster ca. 25 $ per måned.
 - **Resend:** Gratis opptil 3 000 e-poster per måned.
-- **Stripe:** ca. 2,4 % + 2 kr per betaling for europeiske kort (sjekk gjeldende priser).
+- **Vipps:** privat Vipps er gratis for mottaker opp til Vipps sine grenser. Tar du imot betaling jevnlig som næring, bør du bruke et bedriftsnummer.
 - **Domener:** Det Vercel tar, pluss påslaget du setter i `/admin/priser`.
 - **OpenAI:** Noen øre per analyse.
 
@@ -120,7 +116,7 @@ Bruk dette når du setter **Hosting per år** i `/admin/priser`.
 - **Foretak:** Selger du tjenester jevnlig, er det næringsvirksomhet. Et enkeltpersonforetak registreres gratis i Brønnøysundregistrene. Legg inn org.nr. i `/admin/innstillinger` når du har det.
 - **Merverdiavgift:** Du må registrere deg i Merverdiavgiftsregisteret når du har solgt for mer enn 50 000 kr på 12 måneder. Sjekk gjeldende regler hos Skatteetaten. Da må du også endre teksten om mva under Priser.
 - **Vilkår:** Vilkårene i `/admin/vilkar` er et utgangspunkt, ikke juridisk rådgivning. Få gjerne en voksen eller en rådgiver til å lese dem.
-- **Regnskap:** Alle betalinger ligger i Stripe. Ta ut rapport derfra til regnskapet.
+- **Regnskap:** Hver bestilling viser når gebyret og resten ble mottatt. Ta vare på Vipps-historikken til regnskapet.
 
 ## Feilsøking
 
@@ -128,6 +124,6 @@ Bruk dette når du setter **Hosting per år** i `/admin/priser`.
 |---|---|
 | «Denne brukeren er ikke admin» | Legg e-posten i tabellen `admins`, eller i `ADMIN_EMAILS` i Vercel |
 | Ingen e-post kommer | Sjekk at domenet er verifisert i Resend og at `EPOST_AVSENDER` bruker det. Se feilmeldingen under **E-post → Sendt** |
-| Bestillingen står som «Ikke betalt» etter betaling | Sjekk webhooken i Stripe (Developers → Webhooks → se feilede kall). Du kan også trykke **Marker gebyret som betalt** |
+| Kunden har vippset uten bestillingsnummer | Søk på kundens navn under Bestillinger og sjekk at beløpet stemmer før du markerer det som mottatt |
 | Domenesøket feiler | Vercel kan ha begrenset antall søk. Legg inn `VERCEL_TOKEN` |
 | Opplasting feiler | Sjekk at `schema.sql` er kjørt (den lager bøtta `bestillinger`) |

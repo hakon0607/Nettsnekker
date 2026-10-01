@@ -13,7 +13,7 @@ export function Prosess({ tittel, gebyr, leveringstid }: { tittel: string; gebyr
     {
       tittel: 'Du bestiller',
       tekst: 'Beskriv bedriften, velg farger, sider og hva du vil kunne endre selv. Last opp logo og bilder hvis du har.',
-      merke: `Du betaler ${kr(gebyr)}`,
+      merke: `Du vippser ${kr(gebyr)}`,
     },
     {
       tittel: 'Vi snekrer',
@@ -22,8 +22,8 @@ export function Prosess({ tittel, gebyr, leveringstid }: { tittel: string; gebyr
     },
     {
       tittel: 'Du godkjenner',
-      tekst: 'Se utkastet på mobil og PC. Vil du endre noe, svarer du på e-posten. Er du fornøyd, godkjenner du og betaler resten.',
-      merke: 'Du betaler resten',
+      tekst: 'Se utkastet på mobil og PC. Vil du endre noe, svarer du på e-posten. Er du fornøyd, vippser du resten med bestillingsnummeret.',
+      merke: 'Du vippser resten',
     },
     {
       tittel: 'Nettsiden er live',

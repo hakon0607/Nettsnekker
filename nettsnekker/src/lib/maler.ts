@@ -28,7 +28,7 @@ export const STANDARD_MALER: Mal[] = [
   {
     key: 'bestilling_mottatt',
     navn: 'Bestilling mottatt',
-    beskrivelse: 'Sendes automatisk til kunden når bestillingsgebyret er betalt.',
+    beskrivelse: 'Sendes automatisk til kunden med en gang bestillingen er sendt. Inneholder hvordan gebyret betales med Vipps.',
     automatisk: true,
     sort: 10,
     emne: 'Vi har fått bestillingen din ({ordrenr})',
@@ -37,15 +37,24 @@ export const STANDARD_MALER: Mal[] = [
 Takk for bestillingen. Vi har fått alt vi trenger for å begynne på nettsiden til **{bedrift_navn}**.
 
 [boks]
+**Betal bestillingsgebyret med Vipps**
+- Beløp: **{gebyr}**
+- Til: **{vipps}** ({vipps_navn})
+- Skriv **{ordrenr}** i meldingen
+[/boks]
+
+Vi starter så snart gebyret er kommet inn.
+
+[boks]
 **Slik går det videre**
 - Vi går gjennom bestillingen og begynner å snekre.
 - Du får en e-post med lenke til utkastet når det er klart, vanligvis innen {leveringstid}.
-- Er du fornøyd, godkjenner du og betaler resten i samme lenke.
+- Er du fornøyd, vippser du resten med bestillingsnummeret i meldingen.
 - Vi kobler på domenet og sender deg alt du trenger.
 [/boks]
 
 **Bestillingsnummer:** {ordrenr}
-**Betalt nå:** {gebyr}
+**Betales nå:** {gebyr}
 **Betales ved godkjenning:** {rest}
 
 {prisliste}
@@ -57,11 +66,13 @@ Hilsen {vart_navn}`,
   {
     key: 'ny_bestilling_eier',
     navn: 'Varsel til deg: ny bestilling',
-    beskrivelse: 'Sendes automatisk til deg når en ny bestilling er betalt.',
+    beskrivelse: 'Sendes automatisk til deg når en ny bestilling kommer inn.',
     automatisk: true,
     sort: 15,
     emne: 'Ny bestilling: {bedrift_navn} ({ordrenr}) – {total}',
     innhold: `Ny bestilling fra **{kunde}** ({epost}, {telefon}).
+
+Kunden skal vippse **{gebyr}** med meldingen **{ordrenr}**. Marker gebyret som betalt i admin når det har kommet.
 
 **Bedrift:** {bedrift_navn}
 **Bransje:** {bransje}
@@ -72,6 +83,21 @@ Hilsen {vart_navn}`,
 {prisliste}
 
 [knapp: Åpne bestillingen | {admin_ordre_url}]`,
+  },
+  {
+    key: 'gebyr_mottatt',
+    navn: 'Gebyr mottatt',
+    beskrivelse: 'Sendes automatisk når du markerer bestillingsgebyret som betalt.',
+    automatisk: true,
+    sort: 18,
+    emne: 'Betalingen er mottatt – nå starter vi ({ordrenr})',
+    innhold: `Hei {fornavn}!
+
+Vi har mottatt {gebyr} for bestilling {ordrenr}. Takk!
+
+Nå begynner vi på nettsiden til **{bedrift_navn}**. Du får en e-post med lenke til utkastet når det er klart, vanligvis innen {leveringstid}.
+
+Hilsen {vart_navn}`,
   },
   {
     key: 'arbeid_startet',
@@ -108,7 +134,7 @@ Hilsen {vart_navn}`,
   {
     key: 'utkast_klart',
     navn: 'Utkastet er klart',
-    beskrivelse: 'Lenke til utkastet og knapp for å godkjenne og betale. Lag betalingslenken først.',
+    beskrivelse: 'Lenke til utkastet, og hvordan kunden godkjenner ved å vippse resten.',
     automatisk: false,
     sort: 30,
     emne: 'Utkastet til nettsiden din er klart',
@@ -118,14 +144,16 @@ Nå er første utkast av nettsiden til **{bedrift_navn}** klart. Ta en titt, gje
 
 [knapp: Se utkastet | {utkast_url}]
 
-Utkastet ligger foreløpig på en midlertidig adresse. Når du har godkjent og betalt, kobler vi på {domene_tekst}.
+Utkastet ligger foreløpig på en midlertidig adresse.
 
 [boks]
-**Er du fornøyd?**
-Trykk på knappen under for å godkjenne nettsiden og betale resten, {rest}. Betalingen er godkjenningen din.
+**Er du fornøyd? Godkjenn med Vipps**
+- Beløp: **{rest}**
+- Til: **{vipps}** ({vipps_navn})
+- Skriv **{ordrenr}** i meldingen
 [/boks]
 
-[knapp: Godkjenn og betal {rest} | {betalingslenke}]
+Betalingen er godkjenningen din. Når den har kommet inn, kobler vi på {domene_tekst}.
 
 **Vil du endre noe?** Svar på denne e-posten med alt du vil endre samlet. Du har {endringsrunder_igjen} av {endringsrunder} endringsrunder igjen.
 
@@ -144,9 +172,7 @@ Vi har gjort endringene du ba om. Ta en ny titt:
 
 [knapp: Se det nye utkastet | {utkast_url}]
 
-Er alt som det skal, godkjenner du og betaler resten her:
-
-[knapp: Godkjenn og betal {rest} | {betalingslenke}]
+Er alt som det skal, godkjenner du ved å vippse **{rest}** til **{vipps}** med meldingen **{ordrenr}**.
 
 Du har {endringsrunder_igjen} endringsrunder igjen.
 
@@ -155,7 +181,7 @@ Hilsen {vart_navn}`,
   {
     key: 'betalingspaminnelse',
     navn: 'Påminnelse om godkjenning',
-    beskrivelse: 'Hvis kunden ikke har svart på utkastet.',
+    beskrivelse: 'Hvis kunden ikke har svart på utkastet eller ikke har vippset.',
     automatisk: false,
     sort: 40,
     emne: 'Har du fått sett på utkastet?',
@@ -165,9 +191,7 @@ Vi ville bare høre om du har fått sett på utkastet til nettsiden til {bedrift
 
 [knapp: Se utkastet | {utkast_url}]
 
-Er du fornøyd, kan du godkjenne og betale her:
-
-[knapp: Godkjenn og betal {rest} | {betalingslenke}]
+Er du fornøyd, godkjenner du ved å vippse **{rest}** til **{vipps}** med meldingen **{ordrenr}**.
 
 Vil du endre noe, er det bare å svare på denne e-posten.
 
@@ -176,7 +200,7 @@ Hilsen {vart_navn}`,
   {
     key: 'betaling_mottatt',
     navn: 'Betaling mottatt',
-    beskrivelse: 'Sendes automatisk når kunden har godkjent og betalt resten.',
+    beskrivelse: 'Sendes automatisk når du markerer resten som betalt.',
     automatisk: true,
     sort: 50,
     emne: 'Takk! Nettsiden er godkjent ({ordrenr})',
@@ -227,7 +251,12 @@ Hilsen {vart_navn}`,
 
 Hostingen for {live_url} er betalt til {hosting_dato}. For å holde nettsiden på nett videre koster det {hosting_pris} for neste år.
 
-[knapp: Betal fornyelsen | {betalingslenke}]
+[boks]
+**Betal med Vipps**
+- Beløp: **{hosting_pris}**
+- Til: **{vipps}** ({vipps_navn})
+- Skriv **{ordrenr} fornyelse** i meldingen
+[/boks]
 
 Har du spørsmål, er det bare å svare på denne e-posten.
 
@@ -262,7 +291,8 @@ export const PLASSHOLDERE: { navn: string; forklaring: string }[] = [
   { navn: 'total', forklaring: 'Totalpris' },
   { navn: 'prisliste', forklaring: 'Hele prisoversikten' },
   { navn: 'utkast_url', forklaring: 'Lenke til utkastet (.vercel.app)' },
-  { navn: 'betalingslenke', forklaring: 'Stripe-lenke for å godkjenne og betale' },
+  { navn: 'vipps', forklaring: 'Vipps-nummeret kundene betaler til' },
+  { navn: 'vipps_navn', forklaring: 'Navnet som vises i Vipps' },
   { navn: 'live_url', forklaring: 'Adressen der siden er live' },
   { navn: 'domene', forklaring: 'Domenet' },
   { navn: 'domene_tekst', forklaring: '«domenet ditt eksempel.no» eller tilsvarende' },
@@ -306,7 +336,8 @@ export function verdierFor(o: Ordre, b: Bedrift, p: Priser, siteUrl: string): Re
     total: kr(o.total),
     prisliste: '__PRISLISTE__',
     utkast_url: o.utkast_url || '(utkast-lenke mangler)',
-    betalingslenke: o.rest_lenke || '(betalingslenke mangler)',
+    vipps: b.vippsNummer || '(Vipps-nummer mangler)',
+    vipps_navn: b.vippsNavn || b.eier,
     live_url: o.live_url || (o.domene ? `https://${o.domene}` : '(live-adresse mangler)'),
     domene: o.domene || 'ikke valgt',
     domene_tekst: domeneTekst,

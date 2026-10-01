@@ -12,6 +12,10 @@ export type Bedrift = {
   /** E-poster som får varsel om nye bestillinger (kommaseparert) */
   varselEpost: string;
   orgnr: string;
+  /** Vipps-nummer eller mobilnummer kundene vippser til */
+  vippsNummer: string;
+  /** Navnet som vises i Vipps når kunden betaler */
+  vippsNavn: string;
 };
 
 export type Tekster = {
@@ -43,6 +47,8 @@ export const STANDARD_BEDRIFT: Bedrift = {
   sted: 'Bergen',
   varselEpost: '',
   orgnr: '',
+  vippsNummer: '',
+  vippsNavn: 'Håkon Solvik',
 };
 
 export const STANDARD_TEKSTER: Tekster = {
@@ -63,11 +69,11 @@ export const STANDARD_TEKSTER: Tekster = {
 export const STANDARD_FAQ: Faq = [
   {
     sporsmal: 'Hva er bestillingsgebyret?',
-    svar: 'Gebyret dekker gjennomgangen av bestillingen og arbeidet med å planlegge siden. Det betales når du bestiller og kommer i tillegg til prisen for nettsiden.',
+    svar: 'Gebyret dekker gjennomgangen av bestillingen og arbeidet med å planlegge siden. Du vippser det når du har bestilt, med bestillingsnummeret i meldingen. Det kommer i tillegg til prisen for nettsiden.',
   },
   {
     sporsmal: 'Når betaler jeg resten?',
-    svar: 'Når utkastet er klart får du en lenke på e-post. Er du fornøyd, godkjenner du og betaler resten i samme lenke. Først da kobler vi på domenet ditt.',
+    svar: 'Når utkastet er klart får du en lenke på e-post. Er du fornøyd, vippser du resten med bestillingsnummeret i meldingen. Det er godkjenningen din, og da kobler vi på domenet ditt.',
   },
   {
     sporsmal: 'Hva om jeg ikke liker utkastet?',
@@ -105,14 +111,14 @@ Nettsnekker drives av {eier}, privatperson, {sted}. E-post: {epost}. Selger er i
 Du bestiller utvikling av en nettside etter beskrivelsen du gir i bestillingsskjemaet. Grunnpakken inneholder det som står på bestillingssiden når du bestiller, blant annet antall sider, antall endringsrunder, kontaktskjema, grunnleggende søkemotoroptimalisering og drift (hosting) det første året. Tillegg du velger, som adminside, timebestilling og domene, står spesifisert i ordrebekreftelsen.
 
 ## 3. Slik foregår kjøpet
-- **Bestilling:** Du sender bestillingen og betaler bestillingsgebyret. Bestillingen er bindende når gebyret er betalt.
+- **Bestilling:** Du sender bestillingen og vippser bestillingsgebyret. Bestillingen er bindende når gebyret er betalt.
 - **Utkast:** Vi lager et utkast som du får lenke til på e-post. Utkastet ligger på en midlertidig adresse.
 - **Endringer:** Du kan be om endringer innenfor antall endringsrunder i pakken. En endringsrunde er én samlet liste med endringer.
-- **Godkjenning og betaling:** Når du er fornøyd, godkjenner du ved å betale resten av prisen via lenken du får. Betalingen regnes som godkjenning av nettsiden.
+- **Godkjenning og betaling:** Når du er fornøyd, godkjenner du ved å vippse resten av prisen med bestillingsnummeret i meldingen. Betalingen regnes som godkjenning av nettsiden.
 - **Levering:** Etter betaling kobler vi til domenet og sender deg innloggingen til /admin hvis du har kjøpt det.
 
 ## 4. Priser og betaling
-Bestillingsgebyret kommer i tillegg til prisen for nettsiden og betales når du bestiller. Resten betales ved godkjenning. Betaling skjer med kort via Stripe. Vi lagrer ikke kortopplysninger.
+Bestillingsgebyret kommer i tillegg til prisen for nettsiden og betales med Vipps når du har bestilt. Resten betales med Vipps når du har godkjent utkastet. Skriv alltid bestillingsnummeret i Vipps-meldingen, så vi kan koble betalingen til bestillingen. Vi starter arbeidet når gebyret er mottatt.
 
 ## 5. Bestillingsgebyr og avbestilling
 Bestillingsgebyret dekker gjennomgang og planlegging og refunderes ikke etter at vi har begynt på arbeidet. Ønsker du ikke å gå videre etter å ha sett utkastet, betaler du ikke resten, og bestillingen avsluttes. Vi fjerner da utkastet, og du får ikke rett til å bruke det.
@@ -152,7 +158,7 @@ Opplysningene brukes til å lage og levere nettsiden, sende deg utkast og kvitte
 
 ## Hvem vi deler med
 - **Supabase** lagrer bestillingene og filene.
-- **Stripe** behandler betalingen. Vi ser aldri kortnummeret ditt.
+- **Vipps** behandler betalingen. Vi ser navnet ditt, beløpet og meldingen du skriver.
 - **Resend** sender e-postene.
 - **OpenAI** kan analysere beskrivelsen og materiellet ditt for å foreslå innhold og struktur.
 - **Vercel** drifter nettsidene.

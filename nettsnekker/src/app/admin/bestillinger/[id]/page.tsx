@@ -157,23 +157,9 @@ function Fremdrift({ o, oppdater, handling, sendMal, gaTil, inkluderteRunder }: 
   const [utkast, setUtkast] = useState(o.utkast_url);
   const [repo, setRepo] = useState(o.github_repo);
   const [live, setLive] = useState(o.live_url || (o.domene ? `https://${o.domene}` : ''));
-  const { api, toast } = useAdmin();
-  const [lagerLenke, setLagerLenke] = useState(false);
   const runder = inkluderteRunder + Number(o.tillegg?.endringsrunde ?? 0);
   const steg = STATUSER.filter((s) => s.id !== 'avbrutt');
   const indeks = steg.findIndex((s) => s.id === o.status);
-
-  const lagLenke = async () => {
-    setLagerLenke(true);
-    try {
-      await api('/api/admin/betalingslenke', { orderId: o.id, type: 'rest' });
-      toast('Betalingslenken er laget');
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'Feil', 'feil');
-    } finally {
-      setLagerLenke(false);
-    }
-  };
 
   return (
     <>
@@ -202,10 +188,10 @@ function Fremdrift({ o, oppdater, handling, sendMal, gaTil, inkluderteRunder }: 
       <Kort tittel="Neste steg">
         {o.status === 'venter_gebyr' && (
           <div className="space-y-3">
-            <p className="text-ink-600">Kunden har ikke fullført betalingen av bestillingsgebyret. Bestillinger som ikke betales kan du avbryte etter noen dager.</p>
+            <VippsSjekk belop={o.gebyr} ordrenr={o.ordrenr} navn={o.kunde_navn} />
             <div className="flex flex-wrap gap-2">
-              <button className="btn-primary" onClick={() => confirm('Markere gebyret som betalt og sende bekreftelse til kunden?') && handling('gebyr_betalt', 'Gebyret er markert som betalt')}>
-                Marker gebyret som betalt
+              <button className="btn-primary" onClick={() => confirm(`Har du fått ${kr(o.gebyr)} på Vipps med meldingen ${o.ordrenr}? Kunden får e-post om at arbeidet starter.`) && handling('gebyr_betalt', 'Gebyret er markert som betalt')}>
+                Gebyret er mottatt på Vipps
               </button>
               <button className="btn-ghost" onClick={() => oppdater({ status: 'avbrutt' }, 'Bestillingen er avbrutt')}>
                 Avbryt bestillingen
@@ -249,28 +235,25 @@ function Fremdrift({ o, oppdater, handling, sendMal, gaTil, inkluderteRunder }: 
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              {o.rest_lenke ? (
-                <span className="rounded-full bg-gran-50 px-3 py-2 text-sm font-semibold text-gran-700">✓ Betalingslenke for {kr(o.rest)} er klar</span>
-              ) : (
-                <button className="btn-ghost" onClick={lagLenke} disabled={lagerLenke}>
-                  {lagerLenke ? 'Lager …' : `1. Lag betalingslenke (${kr(o.rest)})`}
-                </button>
-              )}
               <button className="btn-primary" onClick={() => sendMal(o.endringsrunder_brukt > 0 ? 'nytt_utkast' : 'utkast_klart')} disabled={!utkast}>
-                {o.rest_lenke ? '' : '2. '}Send utkastet til kunden
+                Send utkastet til kunden
               </button>
+              {!utkast && <span className="text-sm text-ink-500">Lim inn lenken til utkastet først.</span>}
             </div>
             {o.status === 'utkast_sendt' && (
-              <div className="flex flex-wrap gap-2 border-t border-white/60 pt-4">
+              <div className="space-y-3 border-t border-white/60 pt-4">
+                <VippsSjekk belop={o.rest} ordrenr={o.ordrenr} navn={o.kunde_navn} />
+              <div className="flex flex-wrap gap-2">
+                <button className="btn-primary" onClick={() => confirm(`Har du fått ${kr(o.rest)} på Vipps med meldingen ${o.ordrenr}? Kunden får kvittering.`) && handling('rest_betalt', 'Resten er markert som betalt')}>
+                  Resten er mottatt på Vipps
+                </button>
                 <button className="btn-ghost" onClick={() => oppdater({ status: 'endringer', endringsrunder_brukt: o.endringsrunder_brukt + 1 }, `Endringsrunde ${o.endringsrunder_brukt + 1} registrert`)}>
                   Kunden vil ha endringer
                 </button>
                 <button className="btn-ghost" onClick={() => sendMal('betalingspaminnelse')}>
                   Send påminnelse
                 </button>
-                <button className="btn-ghost" onClick={() => confirm('Har kunden betalt på annen måte? Dette markerer resten som betalt og sender kvittering.') && handling('rest_betalt', 'Resten er markert som betalt')}>
-                  Marker betalt manuelt
-                </button>
+              </div>
               </div>
             )}
           </div>
@@ -356,7 +339,6 @@ function Fremdrift({ o, oppdater, handling, sendMal, gaTil, inkluderteRunder }: 
               ['Utkast', o.utkast_url],
               ['Live', o.live_url],
               ['GitHub', o.github_repo],
-              ['Betaling', o.rest_lenke],
               ['Gammel side', o.eksisterende_side],
             ]
               .filter(([, v]) => v)
@@ -576,15 +558,24 @@ function Prompt({ o, hent }: { o: Ordre; hent: () => Promise<void> }) {
 
 /* ------------------------------------------------------------------ */
 
+/** Det du ser etter i Vipps for å koble en betaling til bestillingen */
+function VippsSjekk({ belop, ordrenr, navn }: { belop: number; ordrenr: string; navn: string }) {
+  return (
+    <div className="rounded-2xl border border-[#F04E23]/25 bg-[#FFF1EC] p-4 text-sm text-ink-800">
+      <p className="font-semibold text-[#C2410C]">Se etter i Vipps</p>
+      <p className="mt-1">
+        <strong className="price">{kr(belop)}</strong> fra <strong>{navn}</strong> med meldingen <strong>{ordrenr}</strong>.
+      </p>
+      <p className="mt-1 text-ink-500">Finner du beløpet uten bestillingsnummer, sjekk navnet og beløpet før du markerer det som betalt.</p>
+    </div>
+  );
+}
+
 function PrisOgBetaling({ o, oppdater, handling }: { o: Ordre; oppdater: Oppdater; handling: (h: string, m: string) => Promise<void> }) {
-  const { api, toast } = useAdmin();
   const [linjer, setLinjer] = useState<PrisLinje[]>(o.pris_linjer ?? []);
   const [rabatt, setRabatt] = useState(o.rabatt ?? 0);
   const [nyNavn, setNyNavn] = useState('');
   const [nyBelop, setNyBelop] = useState('');
-  const [ekstra, setEkstra] = useState({ belop: '', beskrivelse: `Hosting neste år – ${o.bedrift_navn}` });
-  const [ekstraLenke, setEkstraLenke] = useState('');
-  const [laster, setLaster] = useState(false);
 
   const sum = linjer.reduce((s, l) => s + Number(l.belop || 0), 0);
   const rest = Math.max(0, sum - rabatt);
@@ -593,20 +584,7 @@ function PrisOgBetaling({ o, oppdater, handling }: { o: Ordre; oppdater: Oppdate
 
   const lagre = async () => {
     if (o.rest_betalt && !confirm('Resten er allerede betalt. Endre prisen likevel?')) return;
-    await oppdater({ pris_linjer: linjer, rabatt, rest, total, ...(o.rest_lenke ? { rest_lenke: '', rest_lenke_id: '' } : {}) }, o.rest_lenke ? 'Prisen er lagret. Lag ny betalingslenke.' : 'Prisen er lagret');
-  };
-
-  const lagLenke = async (type: 'rest' | 'fornyelse') => {
-    setLaster(true);
-    try {
-      const j = await api<{ url: string }>('/api/admin/betalingslenke', type === 'rest' ? { orderId: o.id, type } : { orderId: o.id, type, belop: Number(ekstra.belop), beskrivelse: ekstra.beskrivelse });
-      if (type === 'fornyelse') setEkstraLenke(j.url);
-      toast('Betalingslenken er laget');
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'Feil', 'feil');
-    } finally {
-      setLaster(false);
-    }
+    await oppdater({ pris_linjer: linjer, rabatt, rest, total }, 'Prisen er lagret. Kunden ser den nye prisen i neste e-post.');
   };
 
   return (
@@ -647,47 +625,18 @@ function PrisOgBetaling({ o, oppdater, handling }: { o: Ordre; oppdater: Oppdate
         </div>
       </Kort>
 
-      <Kort tittel="Godkjenning og betaling">
+      <Kort tittel="Betaling med Vipps">
         <div className="space-y-3 text-sm">
-          <p className="flex justify-between"><span>Gebyr</span><span className={o.gebyr_betalt ? 'font-semibold text-gran-700' : 'text-ink-500'}>{o.gebyr_betalt ? `Betalt ${dato(o.gebyr_betalt_at, true)}` : 'Ikke betalt'}</span></p>
-          <p className="flex justify-between"><span>Rest</span><span className={o.rest_betalt ? 'font-semibold text-gran-700' : 'text-ink-500'}>{o.rest_betalt ? `Betalt ${dato(o.rest_betalt_at, true)}` : 'Ikke betalt'}</span></p>
-          {o.rest_lenke ? (
-            <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-white/60 p-3">
-              <span className="min-w-0 flex-1 truncate font-mono text-xs">{o.rest_lenke}</span>
-              <button className="btn-ghost btn-sm" onClick={() => navigator.clipboard.writeText(o.rest_lenke).then(() => toast('Kopiert'))}>Kopier</button>
-              <a className="btn-ghost btn-sm" href={o.rest_lenke} target="_blank" rel="noreferrer">Åpne</a>
-              {!o.rest_betalt && <button className="btn-ghost btn-sm" onClick={() => lagLenke('rest')} disabled={laster}>Lag ny</button>}
-            </div>
-          ) : (
-            !o.rest_betalt && <button className="btn-primary" onClick={() => lagLenke('rest')} disabled={laster || endret}>{laster ? 'Lager …' : `Lag betalingslenke for ${kr(o.rest)}`}</button>
-          )}
-          {endret && <p className="text-harpiks-600">Lagre prisen før du lager betalingslenke.</p>}
-          <div className="flex flex-wrap gap-2 pt-2">
-            {!o.gebyr_betalt && <button className="btn-ghost btn-sm" onClick={() => confirm('Markere gebyret som betalt og sende bekreftelse?') && handling('gebyr_betalt', 'Gebyret er markert som betalt')}>Marker gebyr betalt</button>}
-            {!o.rest_betalt && <button className="btn-ghost btn-sm" onClick={() => confirm('Markere resten som betalt og sende kvittering til kunden?') && handling('rest_betalt', 'Resten er markert som betalt')}>Marker rest betalt</button>}
-            {o.gebyr_betalt && <button className="btn-ghost btn-sm" onClick={() => confirm('Sende bekreftelsen på nytt (til kunden og deg)?') && handling('send_bekreftelse_pa_nytt', 'Bekreftelsen er sendt på nytt')}>Send bekreftelse på nytt</button>}
+          <p className="flex justify-between"><span>Gebyr {kr(o.gebyr)}</span><span className={o.gebyr_betalt ? 'font-semibold text-gran-700' : 'text-ink-500'}>{o.gebyr_betalt ? `Mottatt ${dato(o.gebyr_betalt_at, true)}` : 'Ikke mottatt'}</span></p>
+          <p className="flex justify-between"><span>Rest {kr(o.rest)}</span><span className={o.rest_betalt ? 'font-semibold text-gran-700' : 'text-ink-500'}>{o.rest_betalt ? `Mottatt ${dato(o.rest_betalt_at, true)}` : 'Ikke mottatt'}</span></p>
+          {(!o.gebyr_betalt || !o.rest_betalt) && <VippsSjekk belop={o.gebyr_betalt ? o.rest : o.gebyr} ordrenr={o.ordrenr} navn={o.kunde_navn} />}
+          <div className="flex flex-wrap gap-2 pt-1">
+            {!o.gebyr_betalt && <button className="btn-primary btn-sm" onClick={() => confirm(`Har du fått ${kr(o.gebyr)} på Vipps for ${o.ordrenr}? Kunden får e-post om at arbeidet starter.`) && handling('gebyr_betalt', 'Gebyret er markert som mottatt')}>Gebyret er mottatt</button>}
+            {o.gebyr_betalt && !o.rest_betalt && <button className="btn-primary btn-sm" onClick={() => confirm(`Har du fått ${kr(o.rest)} på Vipps for ${o.ordrenr}? Kunden får kvittering.`) && handling('rest_betalt', 'Resten er markert som mottatt')}>Resten er mottatt</button>}
+            <button className="btn-ghost btn-sm" onClick={() => confirm('Sende bestillingsbekreftelsen (med Vipps-info) på nytt til kunden og deg?') && handling('send_bekreftelse_pa_nytt', 'Bekreftelsen er sendt på nytt')}>Send bekreftelse på nytt</button>
           </div>
+          <p className="text-ink-500">Ekstra betalinger, som fornyelse av hosting, sender du med malen «Fornyelse» under E-post. Kunden vippser med bestillingsnummeret i meldingen.</p>
         </div>
-      </Kort>
-
-      <Kort tittel="Ekstra betaling (fornyelse eller tillegg)">
-        <div className="grid gap-3 sm:grid-cols-[1fr_140px_auto] sm:items-end">
-          <div>
-            <label className="label" htmlFor="eb">Hva gjelder det?</label>
-            <input id="eb" className="field" value={ekstra.beskrivelse} onChange={(e) => setEkstra({ ...ekstra, beskrivelse: e.target.value })} />
-          </div>
-          <div>
-            <label className="label" htmlFor="ebel">Beløp</label>
-            <input id="ebel" className="field" type="number" value={ekstra.belop} onChange={(e) => setEkstra({ ...ekstra, belop: e.target.value })} />
-          </div>
-          <button className="btn-primary" onClick={() => lagLenke('fornyelse')} disabled={laster || !ekstra.belop}>Lag lenke</button>
-        </div>
-        {ekstraLenke && (
-          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl bg-white/60 p-3 text-sm">
-            <span className="min-w-0 flex-1 truncate font-mono text-xs">{ekstraLenke}</span>
-            <button className="btn-ghost btn-sm" onClick={() => navigator.clipboard.writeText(ekstraLenke).then(() => toast('Kopiert. Lim den inn i «Annen betalingslenke» når du sender e-post.'))}>Kopier</button>
-          </div>
-        )}
       </Kort>
     </>
   );

@@ -71,12 +71,12 @@ export type Status =
 
 /** Rekkefølgen en bestilling går gjennom. */
 export const STATUSER: { id: Status; navn: string; farge: string; forklaring: string }[] = [
-  { id: 'venter_gebyr', navn: 'Ikke betalt', farge: '#AAB7B3', forklaring: 'Kunden har ikke betalt bestillingsgebyret ennå.' },
-  { id: 'ny', navn: 'Ny', farge: '#F2B33D', forklaring: 'Gebyret er betalt. Les bestillingen og lag prompten.' },
+  { id: 'venter_gebyr', navn: 'Venter på Vipps', farge: '#AAB7B3', forklaring: 'Kunden skal vippse bestillingsgebyret. Marker det som mottatt når du ser det i Vipps.' },
+  { id: 'ny', navn: 'Ny', farge: '#F2B33D', forklaring: 'Gebyret er mottatt. Les bestillingen og lag prompten.' },
   { id: 'under_arbeid', navn: 'Snekres', farge: '#5FB2D9', forklaring: 'Du lager nettsiden.' },
-  { id: 'utkast_sendt', navn: 'Utkast sendt', farge: '#9B7BFF', forklaring: 'Kunden ser på utkastet.' },
+  { id: 'utkast_sendt', navn: 'Utkast sendt', farge: '#9B7BFF', forklaring: 'Kunden ser på utkastet. Marker resten som mottatt når du ser den i Vipps.' },
   { id: 'endringer', navn: 'Endringer', farge: '#E26D9B', forklaring: 'Kunden vil ha endringer.' },
-  { id: 'godkjent', navn: 'Betalt', farge: '#43A284', forklaring: 'Kunden har godkjent og betalt. Koble på domenet.' },
+  { id: 'godkjent', navn: 'Betalt', farge: '#43A284', forklaring: 'Kunden har godkjent og vippset resten. Koble på domenet.' },
   { id: 'live', navn: 'Live', farge: '#1F6F5C', forklaring: 'Nettsiden er publisert på domenet.' },
   { id: 'levert', navn: 'Levert', farge: '#16473C', forklaring: 'Alt er sendt og ferdig.' },
   { id: 'avbrutt', navn: 'Avbrutt', farge: '#C2453D', forklaring: 'Bestillingen er stoppet.' },

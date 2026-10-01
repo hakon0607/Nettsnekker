@@ -13,6 +13,8 @@ const BEDRIFTFELT: { k: keyof Bedrift; navn: string; hint?: string }[] = [
   { k: 'telefon', navn: 'Telefon' },
   { k: 'sted', navn: 'Sted' },
   { k: 'orgnr', navn: 'Organisasjonsnummer', hint: 'Tomt til du har registrert foretak' },
+  { k: 'vippsNummer', navn: 'Vipps-nummer', hint: 'Mobilnummeret ditt, eller Vipps-nummeret hvis du har bedriftsavtale. Vises til kundene' },
+  { k: 'vippsNavn', navn: 'Navn i Vipps', hint: 'Navnet kundene ser når de betaler, så de vet at det er riktig' },
   { k: 'varselEpost', navn: 'Varsel om nye bestillinger til', hint: 'Kommaseparert. Tomt = alle admins' },
 ];
 
@@ -73,8 +75,6 @@ export default function Innstillinger() {
 
   const STATUS: [string, string, string][] = [
     ['supabase', 'Supabase (service role)', 'SUPABASE_SERVICE_ROLE_KEY'],
-    ['stripe', 'Stripe', 'STRIPE_SECRET_KEY'],
-    ['stripeWebhook', 'Stripe webhook', 'STRIPE_WEBHOOK_SECRET'],
     ['resend', 'E-post (Resend)', 'RESEND_API_KEY'],
     ['openai', 'OpenAI', 'OPENAI_API_KEY'],
     ['vercel', 'Vercel-token (valgfritt)', 'VERCEL_TOKEN'],
@@ -138,7 +138,6 @@ export default function Innstillinger() {
                   </li>
                 ))}
                 <li className="px-3 pt-2 text-ink-500">Avsender: {String(oppsett.avsender || 'ikke satt (EPOST_AVSENDER)')}</li>
-                <li className="px-3 text-ink-500">Stripe-webhook: <code>{typeof window !== 'undefined' ? location.origin : ''}/api/stripe/webhook</code></li>
               </ul>
             ) : (
               <p className="text-ink-500">Sjekker …</p>

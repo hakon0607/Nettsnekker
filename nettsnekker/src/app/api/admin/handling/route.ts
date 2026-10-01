@@ -16,10 +16,10 @@ export async function POST(request: Request) {
 
   switch (b.handling) {
     case 'gebyr_betalt':
-      await gebyrBetalt(a.service, o.id, `manuelt av ${a.epost}`);
+      await gebyrBetalt(a.service, o.id, `markert av ${a.epost}`);
       break;
     case 'rest_betalt':
-      await restBetalt(a.service, o.id, `manuelt av ${a.epost}`);
+      await restBetalt(a.service, o.id, `markert av ${a.epost}`);
       break;
     case 'send_bekreftelse_pa_nytt':
       await a.service.from('orders').update({ bekreftelse_sendt: false }).eq('id', o.id);

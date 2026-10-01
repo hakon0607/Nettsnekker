@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/server';
-import { hentInnstillinger, sideUrl } from '@/lib/settings';
+import { hentInnstillinger } from '@/lib/settings';
 import { regnUt } from '@/lib/pricing';
 import { TEMAER, STILER } from '@/lib/valg';
 import { gyldigEpost, tilValg, type Skjema } from '@/lib/skjema';
-import { getStripe } from '@/lib/stripe';
 import { sokDomener } from '@/lib/domene';
 import { sendBekreftelse } from '@/lib/betaling';
 import { loggHendelse } from '@/lib/hendelse';
@@ -115,48 +114,11 @@ export async function POST(request: Request) {
   const ordre = data as Ordre;
   await loggHendelse(service, ordre.id, 'Bestilling sendt', `${ordre.kunde_navn} · ${ordre.bedrift_navn}`);
 
-  const stripe = getStripe();
-  const base = sideUrl();
-
-  if (stripe && pris.gebyr > 0) {
-    try {
-      const okt = await stripe.checkout.sessions.create({
-        mode: 'payment',
-        customer_email: ordre.kunde_epost,
-        locale: 'nb',
-        line_items: [
-          {
-            quantity: 1,
-            price_data: {
-              currency: 'nok',
-              unit_amount: Math.round(pris.gebyr * 100),
-              product_data: {
-                name: `Bestillingsgebyr – nettside til ${ordre.bedrift_navn}`,
-                description: `Bestilling ${ordre.ordrenr}. Resten (${pris.rest} kr) betales når du har godkjent utkastet.`,
-              },
-            },
-          },
-        ],
-        metadata: { order_id: ordre.id, type: 'gebyr' },
-        payment_intent_data: { metadata: { order_id: ordre.id, type: 'gebyr' }, description: `${ordre.ordrenr} gebyr` },
-        success_url: `${base}/bestilt?ordre=${ordre.id}&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${base}/bestill?avbrutt=1`,
-      });
-      await service.from('orders').update({ gebyr_session_id: okt.id }).eq('id', ordre.id);
-      return NextResponse.json({ ok: true, url: okt.url });
-    } catch (e) {
-      return NextResponse.json(
-        { error: `Kunne ikke starte betalingen: ${e instanceof Error ? e.message : 'ukjent feil'}` },
-        { status: 502 }
-      );
-    }
+  // Bekreftelse med Vipps-info til kunden og varsel til deg sendes med en gang.
+  // Gebyret markeres som betalt i admin når du har sett det i Vipps.
+  if (pris.gebyr === 0) {
+    await service.from('orders').update({ status: 'ny', gebyr_betalt: true, gebyr_betalt_at: new Date().toISOString() }).eq('id', ordre.id);
   }
-
-  // Uten Stripe (eller gebyr 0): bestillingen regnes som mottatt med en gang.
-  await service
-    .from('orders')
-    .update({ status: 'ny', gebyr_betalt: pris.gebyr === 0 })
-    .eq('id', ordre.id);
-  await sendBekreftelse(service, { ...ordre, status: 'ny' });
+  await sendBekreftelse(service, ordre);
   return NextResponse.json({ ok: true, url: `/bestilt?ordre=${ordre.id}` });
 }

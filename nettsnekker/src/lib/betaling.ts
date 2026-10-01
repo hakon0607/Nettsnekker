@@ -4,30 +4,9 @@ import { sendMal, varsleEier } from './epost';
 import { loggHendelse } from './hendelse';
 
 /**
- * Markerer bestillingsgebyret som betalt og sender e-postene.
- * Trygg å kalle flere ganger (webhook + bekreftelsessiden): bare den
- * første som faktisk endrer raden sender e-post.
+ * Sender bekreftelse til kunden (med Vipps-info) og varsel til deg.
+ * Trygg å kalle flere ganger: e-posten sendes bare én gang.
  */
-export async function gebyrBetalt(service: SupabaseClient, orderId: string, sessionId = '') {
-  const { data } = await service
-    .from('orders')
-    .update({
-      gebyr_betalt: true,
-      gebyr_betalt_at: new Date().toISOString(),
-      gebyr_session_id: sessionId,
-      status: 'ny',
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', orderId)
-    .eq('gebyr_betalt', false)
-    .select('*')
-    .maybeSingle();
-  if (!data) return; // allerede behandlet
-  const ordre = data as Ordre;
-  await loggHendelse(service, ordre.id, 'Bestillingsgebyr betalt', sessionId);
-  await sendBekreftelse(service, ordre);
-}
-
 export async function sendBekreftelse(service: SupabaseClient, ordre: Ordre) {
   const { data } = await service
     .from('orders')
@@ -41,7 +20,27 @@ export async function sendBekreftelse(service: SupabaseClient, ordre: Ordre) {
   await varsleEier(service, ordre);
 }
 
-/** Kunden har godkjent og betalt resten. */
+/** Du har sett gebyret i Vipps og markerer det som betalt. */
+export async function gebyrBetalt(service: SupabaseClient, orderId: string, detalj = '') {
+  const { data } = await service
+    .from('orders')
+    .update({
+      gebyr_betalt: true,
+      gebyr_betalt_at: new Date().toISOString(),
+      status: 'ny',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', orderId)
+    .eq('gebyr_betalt', false)
+    .select('*')
+    .maybeSingle();
+  if (!data) return; // allerede markert
+  const ordre = data as Ordre;
+  await loggHendelse(service, ordre.id, 'Bestillingsgebyr mottatt (Vipps)', detalj);
+  await sendMal(service, ordre, 'gebyr_mottatt');
+}
+
+/** Kunden har godkjent og vippset resten. */
 export async function restBetalt(service: SupabaseClient, orderId: string, detalj = '') {
   const iDag = new Date();
   const omEttAar = new Date(iDag);
@@ -66,6 +65,6 @@ export async function restBetalt(service: SupabaseClient, orderId: string, detal
     d.setFullYear(iDag.getFullYear() + (ordre.domene_aar || 1));
     await service.from('orders').update({ domene_fornyes: d.toISOString().slice(0, 10) }).eq('id', ordre.id);
   }
-  await loggHendelse(service, ordre.id, 'Godkjent og betalt', detalj);
+  await loggHendelse(service, ordre.id, 'Godkjent og betalt (Vipps)', detalj);
   await sendMal(service, ordre, 'betaling_mottatt');
 }

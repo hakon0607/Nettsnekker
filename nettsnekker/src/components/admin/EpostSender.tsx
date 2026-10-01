@@ -95,7 +95,6 @@ export function EpostSender({ ordre, inn, startMal, onSendt }: { ordre: Ordre; i
   const [til, setTil] = useState(ordre.kunde_epost);
   const [emne, setEmne] = useState('');
   const [innhold, setInnhold] = useState('');
-  const [lenke, setLenke] = useState('');
   const [sender, setSender] = useState(false);
   const tekstRef = useRef<HTMLTextAreaElement>(null);
 
@@ -111,14 +110,12 @@ export function EpostSender({ ordre, inn, startMal, onSendt }: { ordre: Ordre; i
     }
   }, [mal?.key, mal?.emne, mal?.innhold]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const brukerLenke = /\{betalingslenke\}/.test(innhold);
-  const ekstra = lenke.trim() ? { betalingslenke: lenke.trim() } : undefined;
-  const verdier = useMemo(() => ({ ...verdierFor(ordre, inn.bedrift, inn.priser, typeof window !== 'undefined' ? location.origin : ''), ...(ekstra ?? {}) }), [ordre, inn, lenke]); // eslint-disable-line react-hooks/exhaustive-deps
+  const verdier = useMemo(() => verdierFor(ordre, inn.bedrift, inn.priser, typeof window !== 'undefined' ? location.origin : ''), [ordre, inn]);
   const e = useMemo(() => lagEpost({ emne, innhold }, ordre, verdier, inn.bedrift), [emne, innhold, ordre, verdier, inn.bedrift]);
 
   const advarsler: string[] = [];
   if (/\{utkast_url\}/.test(innhold) && !ordre.utkast_url) advarsler.push('Utkast-lenken mangler. Legg den inn under «Fremdrift».');
-  if (brukerLenke && !ordre.rest_lenke && !lenke) advarsler.push('Betalingslenken mangler. Lag den under «Pris og betaling».');
+  if (/\{vipps\}/.test(innhold) && !inn.bedrift.vippsNummer) advarsler.push('Vipps-nummeret mangler. Legg det inn under Innstillinger.');
   if (/\{live_url\}/.test(innhold) && !ordre.live_url && !ordre.domene) advarsler.push('Live-adressen mangler.');
 
   const settInn = (navn: string) => {
@@ -138,7 +135,7 @@ export function EpostSender({ ordre, inn, startMal, onSendt }: { ordre: Ordre; i
     if (advarsler.length && !confirm(`${advarsler.join('\n')}\n\nSende likevel?`)) return;
     setSender(true);
     try {
-      await api('/api/admin/epost', { orderId: ordre.id, mal: malKey, til, emne, innhold, ekstra });
+      await api('/api/admin/epost', { orderId: ordre.id, mal: malKey, til, emne, innhold });
       toast(`E-posten «${e.emne}» er sendt til ${til}`);
       onSendt?.(malKey);
     } catch (err) {
@@ -194,15 +191,6 @@ export function EpostSender({ ordre, inn, startMal, onSendt }: { ordre: Ordre; i
               <code>**fet**</code> · <code>- punkt</code> · <code>[knapp: Tekst | {'{utkast_url}'}]</code> · <code>[boks] … [/boks]</code>. Endringer her gjelder bare denne e-posten.
             </p>
           </div>
-          {brukerLenke && (
-            <div>
-              <label className="label" htmlFor="lenke">
-                Annen betalingslenke (valgfritt)
-              </label>
-              <input id="lenke" className="field" placeholder={ordre.rest_lenke || 'Bruker restbetalingslenken'} value={lenke} onChange={(x) => setLenke(x.target.value)} />
-              <p className="hint">Bruk for eksempel en lenke for fornyelse. Tomt = lenken for restbeløpet.</p>
-            </div>
-          )}
           {advarsler.map((a) => (
             <p key={a} className="rounded-xl bg-harpiks-100 px-3 py-2 text-sm text-ink-800">
               {a}

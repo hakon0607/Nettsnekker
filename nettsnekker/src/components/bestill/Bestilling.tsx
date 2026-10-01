@@ -154,11 +154,11 @@ export function Bestilling({ p, avbrutt }: { p: Priser; avbrutt: boolean }) {
       <div className="mb-8 max-w-2xl">
         <h1 className="text-balance text-4xl sm:text-5xl">Bestill nettside</h1>
         <p className="mt-3 text-lg text-ink-600">
-          Sju korte steg. Du betaler {kr(p.gebyr)} når du sender bestillingen, og resten når du har godkjent utkastet.
+          Sju korte steg. Du vippser {kr(p.gebyr)} når du har sendt bestillingen, og resten når du har godkjent utkastet.
         </p>
         {avbrutt && (
           <p className="mt-4 rounded-2xl bg-harpiks-100 px-4 py-3 text-sm text-ink-800" role="status">
-            Betalingen ble avbrutt. Alt du fylte ut er lagret, så du kan prøve igjen når du vil.
+            Alt du fylte ut er lagret, så du kan fortsette der du slapp.
           </p>
         )}
       </div>
@@ -483,8 +483,8 @@ export function Bestilling({ p, avbrutt }: { p: Priser; avbrutt: boolean }) {
                       <Link href="/vilkar" target="_blank" className="font-semibold text-gran-700 underline">
                         vilkårene
                       </Link>{' '}
-                      og forstår at bestillingsgebyret på {kr(p.gebyr)} kommer i tillegg til prisen og ikke refunderes etter at arbeidet har startet. Resten,{' '}
-                      <strong className="price">{kr(r.rest)}</strong>, betaler jeg først når jeg har godkjent utkastet.
+                      og forstår at bestillingsgebyret på {kr(p.gebyr)} vippses etter bestillingen, kommer i tillegg til prisen og ikke refunderes etter at arbeidet har startet. Resten,{' '}
+                      <strong className="price">{kr(r.rest)}</strong>, vippser jeg først når jeg har godkjent utkastet.
                     </span>
                   </label>
 
@@ -512,7 +512,7 @@ export function Bestilling({ p, avbrutt }: { p: Priser; avbrutt: boolean }) {
                   </button>
                 ) : (
                   <button type="button" className="btn-resin px-6 py-3.5 text-[15px]" onClick={send} disabled={sender} data-mag>
-                    {sender ? 'Sender …' : `Betal ${kr(p.gebyr)} og bestill`}
+                    {sender ? 'Sender …' : 'Send bestillingen'}
                   </button>
                 )}
               </div>
@@ -554,7 +554,7 @@ export function Bestilling({ p, avbrutt }: { p: Priser; avbrutt: boolean }) {
             </button>
           ) : (
             <button type="button" className="btn-resin" onClick={send} disabled={sender}>
-              {sender ? 'Sender …' : `Betal ${kr(p.gebyr)}`}
+              {sender ? 'Sender …' : 'Send'}
             </button>
           )}
         </div>

@@ -47,7 +47,7 @@ export const EKSEMPEL_ORDRE: Ordre = {
   gebyr_betalt_at: new Date().toISOString(),
   rest_betalt: false,
   rest_betalt_at: null,
-  rest_lenke: 'https://buy.stripe.com/test_eksempel',
+  rest_lenke: '',
   rest_lenke_id: '',
   utkast_url: 'https://klipp-og-kroll.vercel.app',
   live_url: '',
