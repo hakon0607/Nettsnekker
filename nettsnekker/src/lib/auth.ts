@@ -33,6 +33,6 @@ export async function erAdmin(service: SupabaseClient, epost: string): Promise<b
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
   if (fraMiljo.includes(epost.toLowerCase())) return true;
-  const { data } = await service.from('admins').select('email').ilike('email', epost).maybeSingle();
-  return !!data;
+  const { data } = await service.from('admins').select('email');
+  return !!(data as { email: string }[] | null)?.some((r) => r.email.trim().toLowerCase() === epost.trim().toLowerCase());
 }
